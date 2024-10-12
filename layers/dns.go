@@ -445,9 +445,13 @@ func recSize(rr *DNSResourceRecord) int {
 			l += len(opt.Data)
 		}
 		return l
+	default:
+		if rr.Data != nil {
+			return int(rr.DataLength)
+		} else {
+			return 0
+		}
 	}
-
-	return 0
 }
 
 func computeSize(recs []DNSResourceRecord) int {
@@ -817,6 +821,8 @@ func (rr *DNSResourceRecord) encode(data []byte, offset int, opts gopacket.Seria
 			noff2 += 4 + len(opt.Data)
 		}
 	default:
+		noff2 := noff + 10
+		copy(data[noff2:], rr.Data)
 		return 0, fmt.Errorf("serializing resource record of type %v not supported", rr.Type)
 	}
 
