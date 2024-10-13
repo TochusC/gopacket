@@ -11,7 +11,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/gopacket"
+	"github.com/tochusc/gopacket"
 )
 
 // OSPFType denotes what kind of OSPF type it is
