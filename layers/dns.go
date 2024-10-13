@@ -823,7 +823,7 @@ func (rr *DNSResourceRecord) encode(data []byte, offset int, opts gopacket.Seria
 	default:
 		noff2 := noff + 10
 		copy(data[noff2:], rr.Data)
-		return 0, fmt.Errorf("serializing resource record of type %v not supported", rr.Type)
+		fmt.Printf("serializing resource record of type %v not supported from raw data\nHope you know what you're doing! :)\n", rr.Type)
 	}
 
 	// DataLength
