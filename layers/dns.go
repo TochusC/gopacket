@@ -52,26 +52,35 @@ type DNSType uint16
 
 // DNSType known values.
 const (
-	DNSTypeA     DNSType = 1   // a host address
-	DNSTypeNS    DNSType = 2   // an authoritative name server
-	DNSTypeMD    DNSType = 3   // a mail destination (Obsolete - use MX)
-	DNSTypeMF    DNSType = 4   // a mail forwarder (Obsolete - use MX)
-	DNSTypeCNAME DNSType = 5   // the canonical name for an alias
-	DNSTypeSOA   DNSType = 6   // marks the start of a zone of authority
-	DNSTypeMB    DNSType = 7   // a mailbox domain name (EXPERIMENTAL)
-	DNSTypeMG    DNSType = 8   // a mail group member (EXPERIMENTAL)
-	DNSTypeMR    DNSType = 9   // a mail rename domain name (EXPERIMENTAL)
-	DNSTypeNULL  DNSType = 10  // a null RR (EXPERIMENTAL)
-	DNSTypeWKS   DNSType = 11  // a well known service description
-	DNSTypePTR   DNSType = 12  // a domain name pointer
-	DNSTypeHINFO DNSType = 13  // host information
-	DNSTypeMINFO DNSType = 14  // mailbox or mail list information
-	DNSTypeMX    DNSType = 15  // mail exchange
-	DNSTypeTXT   DNSType = 16  // text strings
-	DNSTypeAAAA  DNSType = 28  // a IPv6 host address [RFC3596]
-	DNSTypeSRV   DNSType = 33  // server discovery [RFC2782] [RFC6195]
-	DNSTypeOPT   DNSType = 41  // OPT Pseudo-RR [RFC6891]
-	DNSTypeURI   DNSType = 256 // URI RR [RFC7553]
+	DNSTypeA     DNSType = 1  // a host address
+	DNSTypeNS    DNSType = 2  // an authoritative name server
+	DNSTypeMD    DNSType = 3  // a mail destination (Obsolete - use MX)
+	DNSTypeMF    DNSType = 4  // a mail forwarder (Obsolete - use MX)
+	DNSTypeCNAME DNSType = 5  // the canonical name for an alias
+	DNSTypeSOA   DNSType = 6  // marks the start of a zone of authority
+	DNSTypeMB    DNSType = 7  // a mailbox domain name (EXPERIMENTAL)
+	DNSTypeMG    DNSType = 8  // a mail group member (EXPERIMENTAL)
+	DNSTypeMR    DNSType = 9  // a mail rename domain name (EXPERIMENTAL)
+	DNSTypeNULL  DNSType = 10 // a null RR (EXPERIMENTAL)
+	DNSTypeWKS   DNSType = 11 // a well known service description
+	DNSTypePTR   DNSType = 12 // a domain name pointer
+	DNSTypeHINFO DNSType = 13 // host information
+	DNSTypeMINFO DNSType = 14 // mailbox or mail list information
+	DNSTypeMX    DNSType = 15 // mail exchange
+	DNSTypeTXT   DNSType = 16 // text strings
+	DNSTypeAAAA  DNSType = 28 // a IPv6 host address [RFC3596]
+	DNSTypeSRV   DNSType = 33 // server discovery [RFC2782] [RFC6195]
+	DNSTypeOPT   DNSType = 41 // OPT Pseudo-RR [RFC6891]
+
+	// DNSSEC RR types [RFC4034][RFC3755]
+	DNSTypeDS         DNSType = 43 // DS RR [RFC4034][RFC3658]
+	DNSTypeRRSIG      DNSType = 46 // RRSIG RR [RFC4034][RFC3755]
+	DNSTypeNSEC       DNSType = 47 // NSEC RR [RFC4034][RFC3755]
+	DNSTypeDNSKEY     DNSType = 48 // DNSKEY RR [RFC4034][RFC3755]
+	DNSTypeNSEC3      DNSType = 50 // NSEC3 RR [RFC5155]
+	DNSTypeNSEC3PARAM DNSType = 51 // NSEC3PARAM RR [RFC5155]
+
+	DNSTypeURI DNSType = 256 // URI RR [RFC7553]
 )
 
 func (dt DNSType) String() string {
@@ -116,6 +125,20 @@ func (dt DNSType) String() string {
 		return "SRV"
 	case DNSTypeOPT:
 		return "OPT"
+	// DNSSEC RR types
+	case DNSTypeDS:
+		return "DS"
+	case DNSTypeRRSIG:
+		return "RRSIG"
+	case DNSTypeNSEC:
+		return "NSEC"
+	case DNSTypeDNSKEY:
+		return "DNSKEY"
+	case DNSTypeNSEC3:
+		return "NSEC3"
+	case DNSTypeNSEC3PARAM:
+		return "NSEC3PARAM"
+
 	case DNSTypeURI:
 		return "URI"
 	}
@@ -823,7 +846,7 @@ func (rr *DNSResourceRecord) encode(data []byte, offset int, opts gopacket.Seria
 	default:
 		noff2 := noff + 10
 		copy(data[noff2:], rr.Data)
-		fmt.Printf("serializing resource record of type %v not supported from raw data\nHope you know what you're doing! :)\n", rr.Type)
+		fmt.Printf("serializing resource record of type %v from raw data\n Hope you know what you're doing! :)\n", rr.Type)
 	}
 
 	// DataLength
