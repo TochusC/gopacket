@@ -1,4 +1,4 @@
-// Copyright 2014, 2018 GoPacket Authors. All rights reserved.
+// Copyright 2014, 2018, 2024 GoPacket Authors. All rights reserved.
 //
 // Use of this source code is governed by a BSD-style license
 // that can be found in the LICENSE file in the root of the source
@@ -52,35 +52,30 @@ type DNSType uint16
 
 // DNSType known values.
 const (
-	DNSTypeA     DNSType = 1  // a host address
-	DNSTypeNS    DNSType = 2  // an authoritative name server
-	DNSTypeMD    DNSType = 3  // a mail destination (Obsolete - use MX)
-	DNSTypeMF    DNSType = 4  // a mail forwarder (Obsolete - use MX)
-	DNSTypeCNAME DNSType = 5  // the canonical name for an alias
-	DNSTypeSOA   DNSType = 6  // marks the start of a zone of authority
-	DNSTypeMB    DNSType = 7  // a mailbox domain name (EXPERIMENTAL)
-	DNSTypeMG    DNSType = 8  // a mail group member (EXPERIMENTAL)
-	DNSTypeMR    DNSType = 9  // a mail rename domain name (EXPERIMENTAL)
-	DNSTypeNULL  DNSType = 10 // a null RR (EXPERIMENTAL)
-	DNSTypeWKS   DNSType = 11 // a well known service description
-	DNSTypePTR   DNSType = 12 // a domain name pointer
-	DNSTypeHINFO DNSType = 13 // host information
-	DNSTypeMINFO DNSType = 14 // mailbox or mail list information
-	DNSTypeMX    DNSType = 15 // mail exchange
-	DNSTypeTXT   DNSType = 16 // text strings
-	DNSTypeAAAA  DNSType = 28 // a IPv6 host address [RFC3596]
-	DNSTypeSRV   DNSType = 33 // server discovery [RFC2782] [RFC6195]
-	DNSTypeOPT   DNSType = 41 // OPT Pseudo-RR [RFC6891]
-
-	// DNSSEC RR types [RFC4034][RFC3755]
-	DNSTypeDS         DNSType = 43 // DS RR [RFC4034][RFC3658]
-	DNSTypeRRSIG      DNSType = 46 // RRSIG RR [RFC4034][RFC3755]
-	DNSTypeNSEC       DNSType = 47 // NSEC RR [RFC4034][RFC3755]
-	DNSTypeDNSKEY     DNSType = 48 // DNSKEY RR [RFC4034][RFC3755]
-	DNSTypeNSEC3      DNSType = 50 // NSEC3 RR [RFC5155]
-	DNSTypeNSEC3PARAM DNSType = 51 // NSEC3PARAM RR [RFC5155]
-
-	DNSTypeURI DNSType = 256 // URI RR [RFC7553]
+	DNSTypeA      DNSType = 1   // a host address
+	DNSTypeNS     DNSType = 2   // an authoritative name server
+	DNSTypeMD     DNSType = 3   // a mail destination (Obsolete - use MX)
+	DNSTypeMF     DNSType = 4   // a mail forwarder (Obsolete - use MX)
+	DNSTypeCNAME  DNSType = 5   // the canonical name for an alias
+	DNSTypeSOA    DNSType = 6   // marks the start of a zone of authority
+	DNSTypeMB     DNSType = 7   // a mailbox domain name (EXPERIMENTAL)
+	DNSTypeMG     DNSType = 8   // a mail group member (EXPERIMENTAL)
+	DNSTypeMR     DNSType = 9   // a mail rename domain name (EXPERIMENTAL)
+	DNSTypeNULL   DNSType = 10  // a null RR (EXPERIMENTAL)
+	DNSTypeWKS    DNSType = 11  // a well known service description
+	DNSTypePTR    DNSType = 12  // a domain name pointer
+	DNSTypeHINFO  DNSType = 13  // host information
+	DNSTypeMINFO  DNSType = 14  // mailbox or mail list information
+	DNSTypeMX     DNSType = 15  // mail exchange
+	DNSTypeTXT    DNSType = 16  // text strings
+	DNSTypeAAAA   DNSType = 28  // a IPv6 host address [RFC3596]
+	DNSTypeSRV    DNSType = 33  // server discovery [RFC2782] [RFC6195]
+	DNSTypeOPT    DNSType = 41  // OPT Pseudo-RR [RFC6891]
+	DNSTypeRRSIG  DNSType = 46  // RRSIG RR [RFC4034][RFC3755]
+	DNSTypeDNSKEY DNSType = 48  // DNSKEY RR [RFC4034][RFC3755]
+	DNSTypeSVCB   DNSType = 64  // SVCB DNS RR [RFC9460]
+	DNSTypeHTTPS  DNSType = 65  // HTTPS RR [RFC9460]
+	DNSTypeURI    DNSType = 256 // URI RR [RFC7553]
 )
 
 func (dt DNSType) String() string {
@@ -125,20 +120,14 @@ func (dt DNSType) String() string {
 		return "SRV"
 	case DNSTypeOPT:
 		return "OPT"
-	// DNSSEC RR types
-	case DNSTypeDS:
-		return "DS"
 	case DNSTypeRRSIG:
 		return "RRSIG"
-	case DNSTypeNSEC:
-		return "NSEC"
 	case DNSTypeDNSKEY:
 		return "DNSKEY"
-	case DNSTypeNSEC3:
-		return "NSEC3"
-	case DNSTypeNSEC3PARAM:
-		return "NSEC3PARAM"
-
+	case DNSTypeSVCB:
+		return "SVCB"
+	case DNSTypeHTTPS:
+		return "HTTPS"
 	case DNSTypeURI:
 		return "URI"
 	}
@@ -180,7 +169,7 @@ func (drc DNSResponseCode) String() string {
 	case DNSResponseCodeFormErr:
 		return "Format Error"
 	case DNSResponseCodeServFail:
-		return "Server Failure "
+		return "Server Failure"
 	case DNSResponseCodeNXDomain:
 		return "Non-Existent Domain"
 	case DNSResponseCodeNotImp:
@@ -468,6 +457,12 @@ func recSize(rr *DNSResourceRecord) int {
 			l += len(opt.Data)
 		}
 		return l
+	case DNSTypeRRSIG:
+		return rr.RRSIG.size()
+	case DNSTypeDNSKEY:
+		return rr.DNSKEY.size()
+	case DNSTypeSVCB, DNSTypeHTTPS:
+		return rr.SVCB.size()
 	default:
 		if rr.Data != nil {
 			return int(rr.DataLength)
@@ -727,6 +722,9 @@ type DNSResourceRecord struct {
 	SRV            DNSSRV
 	MX             DNSMX
 	OPT            []DNSOPT // See RFC 6891, section 6.1.2
+	RRSIG          DNSRRSIG // See RFC 4034, section 3.1
+	DNSKEY         DNSKEY   // See RFC 4034, section 2.1
+	SVCB           DNSSVCB  // See RFC 9460, this contains both SVCB and HTTPS
 	URI            DNSURI
 
 	// Undecoded TXT for backward compatibility
@@ -843,9 +841,19 @@ func (rr *DNSResourceRecord) encode(data []byte, offset int, opts gopacket.Seria
 			copy(data[noff2+4:], opt.Data)
 			noff2 += 4 + len(opt.Data)
 		}
+	case DNSTypeRRSIG:
+		rr.RRSIG.encode(data, noff+10)
+	case DNSTypeDNSKEY:
+		rr.DNSKEY.encode(data, noff+10)
+	case DNSTypeSVCB, DNSTypeHTTPS:
+		rr.SVCB.encode(data, noff+10)
 	default:
-		noff2 := noff + 10
-		copy(data[noff2:], rr.Data)
+		if rr.Data != nil {
+			noff2 := noff + 10
+			copy(data[noff2:], rr.Data)
+		} else {
+			return 0, fmt.Errorf("serializing resource record of type %v not supported wihout providing RDATA", rr.Type)
+		}
 	}
 
 	// DataLength
@@ -929,6 +937,47 @@ func decodeOPTs(data []byte, offset int) ([]DNSOPT, error) {
 		i += int(l) + 4
 	}
 	return allOPT, nil
+}
+
+func decodeSVCB(data []byte, offset int, buffer *[]byte) (DNSSVCB, error) {
+	var svcb DNSSVCB
+	end := len(data)
+
+	if offset == end {
+		return svcb, fmt.Errorf("DNSSVCB record is empty")
+	}
+
+	if offset+3 > end {
+		return svcb, fmt.Errorf("DNSSVCB record is of length %d, it should be at least length 3", end-offset)
+	}
+	priority := binary.BigEndian.Uint16(data[offset:])
+	target, ofs, err := decodeName(data, offset+2, buffer, 1)
+	if err != nil {
+		return svcb, err
+	}
+
+	var params []DNSSvcParam
+	for ofs < end {
+		if offset+4 > end {
+			return svcb, fmt.Errorf("DNSSVCB record truncated in SvcParams")
+		}
+		key := DNSSvcParamKey(binary.BigEndian.Uint16(data[ofs:]))
+		l := int(binary.BigEndian.Uint16(data[ofs+2:]))
+		if ofs+4+l > end {
+			return svcb, fmt.Errorf("DNSSVCB record truncated in SvcParams")
+		}
+		params = append(params, DNSSvcParam{
+			Key:   key,
+			Value: data[ofs+4 : ofs+4+l],
+		})
+		ofs += 4 + l
+	}
+
+	return DNSSVCB{
+		Priority: priority,
+		Target:   target,
+		Params:   params,
+	}, nil
 }
 
 func (rr *DNSResourceRecord) decodeRData(data []byte, offset int, buffer *[]byte) error {
@@ -1016,6 +1065,12 @@ func (rr *DNSResourceRecord) decodeRData(data []byte, offset int, buffer *[]byte
 			return err
 		}
 		rr.OPT = allOPT
+	case DNSTypeSVCB, DNSTypeHTTPS:
+		svcb, err := decodeSVCB(data, offset, buffer)
+		if err != nil {
+			return err
+		}
+		rr.SVCB = svcb
 	}
 	return nil
 }
@@ -1039,6 +1094,174 @@ type DNSSRV struct {
 type DNSMX struct {
 	Preference uint16
 	Name       []byte
+}
+
+// DNSSVCB resource record is used to facilitate the lookup of
+// information needed to make connections to network services, such as
+// for HTTP origins.
+type DNSSVCB struct {
+	Priority uint16
+	Target   []byte
+	Params   []DNSSvcParam
+}
+
+func (svcb DNSSVCB) size() int {
+	// Target.
+	sz := len(svcb.Target)
+	if sz == 0 {
+		sz++
+	} else {
+		sz += 2
+	}
+	// Priority.
+	sz += 2
+
+	// Params.
+	for _, param := range svcb.Params {
+		sz += param.size()
+	}
+	return sz
+}
+
+func (svcb DNSSVCB) String() string {
+	return fmt.Sprintf("%v [%s] %v",
+		svcb.Priority, string(svcb.Target), svcb.Params)
+}
+
+func (svcb DNSSVCB) encode(data []byte, offset int) {
+	binary.BigEndian.PutUint16(data[offset:], svcb.Priority)
+	offset = encodeName(svcb.Target, data, offset+2)
+
+	for _, param := range svcb.Params {
+		offset = param.encode(data, offset)
+	}
+}
+
+// DNSSvcParamKey defines SVCB service parameter keys.
+type DNSSvcParamKey uint16
+
+func (key DNSSvcParamKey) String() string {
+	switch key {
+	default:
+		return "Unknown"
+	case DNSSvcParamKeyMandatory:
+		return "mandatory"
+	case DNSSvcParamKeyAlpn:
+		return "alpn"
+	case DNSSvcParamKeyNoDefaultAlpn:
+		return "no-default-alpn"
+	case DNSSvcParamKeyPort:
+		return "port"
+	case DNSSvcParamKeyIPv4Hint:
+		return "ipv4hint"
+	case DNSSvcParamKeyECH:
+		return "ech"
+	case DNSSvcParamKeyIPv6Hint:
+		return "ipv6hint"
+	case DNSSvcParamKeyDoHPath:
+		return "dohpath"
+	case DNSSvcParamKeyOHTTP:
+		return "ohttp"
+	case DNSSvcParamKeyDoHURI:
+		return "dohuri"
+	case DNSSvcParamKeyInvalidKey:
+		return "Invalid key"
+	}
+}
+
+// DNSSvcParamKey known values.
+const (
+	DNSSvcParamKeyMandatory     DNSSvcParamKey = 0     // RFC9460, Section 8
+	DNSSvcParamKeyAlpn          DNSSvcParamKey = 1     // RFC9460, Section 7.1
+	DNSSvcParamKeyNoDefaultAlpn DNSSvcParamKey = 2     // RFC9460, Section 7.1
+	DNSSvcParamKeyPort          DNSSvcParamKey = 3     // RFC9460, Section 7.2
+	DNSSvcParamKeyIPv4Hint      DNSSvcParamKey = 4     // RFC9460, Section 7.3
+	DNSSvcParamKeyECH           DNSSvcParamKey = 5     // RFC9460
+	DNSSvcParamKeyIPv6Hint      DNSSvcParamKey = 6     // RFC9460, Section 7.3
+	DNSSvcParamKeyDoHPath       DNSSvcParamKey = 7     // RFC9461
+	DNSSvcParamKeyOHTTP         DNSSvcParamKey = 8     // RFC9540, Section 4
+	DNSSvcParamKeyDoHURI        DNSSvcParamKey = 32768 // draft-pauly-add-resolver-discovery-00.html
+	DNSSvcParamKeyInvalidKey    DNSSvcParamKey = 65535 // RFC9460
+)
+
+// DNSSvcParam is a service param, see RFC9460, section 2.2.
+type DNSSvcParam struct {
+	Key   DNSSvcParamKey
+	Value []byte
+}
+
+func (param DNSSvcParam) size() int {
+	return 2 + 2 + len(param.Value)
+}
+
+func (param DNSSvcParam) encode(data []byte, offset int) int {
+	binary.BigEndian.PutUint16(data[offset:], uint16(param.Key))
+	offset += 2
+	binary.BigEndian.PutUint16(data[offset:], uint16(len(param.Value)))
+	offset += 2
+	copy(data[offset:], param.Value)
+	offset += len(param.Value)
+
+	return offset
+}
+
+func (param DNSSvcParam) String() string {
+	return fmt.Sprintf("%s=%x", param.Key, param.Value)
+}
+
+// DNSRRSIG is a DNS RRSIG record, see RFC 4034, section 3.1
+type DNSRRSIG struct {
+	TypeCovered                        DNSType
+	Algorithm, Labels                  uint8
+	OriginalTTL, Expiration, Inception uint32
+	KeyTag                             uint16
+	SignerName, Signature              []byte
+}
+
+func (rrsig DNSRRSIG) size() int {
+	return 18 + len(rrsig.SignerName) + len(rrsig.Signature)
+}
+
+func (rrsig DNSRRSIG) String() string {
+	return fmt.Sprintf("RRSIG %d %d %d %d %d %d %d %v %v",
+		rrsig.TypeCovered, rrsig.Algorithm, rrsig.Labels, rrsig.OriginalTTL,
+		rrsig.Expiration, rrsig.Inception, rrsig.KeyTag, rrsig.SignerName, rrsig.Signature)
+}
+
+func (rrsig DNSRRSIG) encode(data []byte, offset int) {
+	binary.BigEndian.PutUint16(data[offset:], rrsig.TypeCovered)
+	data[offset+2] = rrsig.Algorithm
+	data[offset+3] = rrsig.Labels
+	binary.BigEndian.PutUint32(data[offset+4:], rrsig.OriginalTTL)
+	binary.BigEndian.PutUint32(data[offset+8:], rrsig.Expiration)
+	binary.BigEndian.PutUint32(data[offset+12:], rrsig.Inception)
+	binary.BigEndian.PutUint16(data[offset+16:], rrsig.KeyTag)
+	offset += 18
+	offset += copy(data[offset:], rrsig.SignerName)
+	copy(data[offset:], rrsig.Signature)
+}
+
+type DNSKEY struct {
+	Flags               uint16
+	Protocol, Algorithm uint8
+	PublicKey           []byte
+}
+
+func (dnskey DNSKEY) size() int {
+	return 4 + len(dnskey.PublicKey)
+}
+
+func (dnskey DNSKEY) String() string {
+	return fmt.Sprintf("DNSKEY %d %d %d %v",
+		dnskey.Flags, dnskey.Protocol, dnskey.Algorithm, dnskey.PublicKey)
+}
+
+func (dnskey DNSKEY) encode(data []byte, offset int) {
+	binary.BigEndian.PutUint16(data[offset:], dnskey.Flags)
+	data[offset+2] = dnskey.Protocol
+	data[offset+3] = dnskey.Algorithm
+	offset += 4
+	copy(data[offset:], dnskey.PublicKey)
 }
 
 // DNSURI is a URI record, defining a target (URI) of a server/service
